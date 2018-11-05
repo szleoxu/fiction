@@ -1,35 +1,39 @@
-package spider
+package common
 
 import (
+	"net/http"
+	"github.com/PuerkitoBio/goquery"
 	"fmt"
 	"os"
-	"github.com/PuerkitoBio/goquery"
 	"log"
-	"net/http"
 )
 
 
+/**
+return document
+ */
 func UrlResponse(url string) (*goquery.Document){
 	response := GetResponse(url)
 	if response.StatusCode == 403 {
-		fmt.Println("403:IP 已被禁止访问")
+		fmt.Println("403:Forbidden")
 		os.Exit(1)
 	}
 	if response.StatusCode == 200 {
-		fmt.Println("url response is success ")
+		fmt.Println("Response is success:"+url)
 		dom, err := goquery.NewDocumentFromReader(response.Body)
 		if err != nil {
-			log.Fatalf("失败原因: %d", response.StatusCode)
+			log.Fatalf("Error msg: %s", err.Error())
 		}
 		return dom
 	}else{
+		log.Fatalf("Response fail.Status Code:%d", response.StatusCode)
 		return nil
 	}
 }
 
 
 /**
-* 返回response
+* return response
 */
 func GetResponse(url string) *http.Response {
 	client := &http.Client{}
@@ -38,3 +42,4 @@ func GetResponse(url string) *http.Response {
 	response, _ := client.Do(request)
 	return response
 }
+

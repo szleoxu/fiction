@@ -8,8 +8,6 @@ import (
 
 
 type DBBook struct {
-	//mysql data source name
-	Dsn string
 	Db       *sql.DB
 	Book BookTB
 }
@@ -23,6 +21,11 @@ type BookTB struct {
 	Image string
 }
 
+func InitBook()(*DBBook){
+	dbw := DBBook{}
+	dbw.Db=Init()
+	return &dbw
+}
 
 func (dbw *DBBook)IsExistBook(name string)(bool) {
 	dbw.QueryDataPre()

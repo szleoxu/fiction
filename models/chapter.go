@@ -7,8 +7,6 @@ import (
 )
 
 type DBChapter struct {
-	//mysql data source name
-	Dsn     string
 	Db      *sql.DB
 	Chapter ChapterTB
 }
@@ -21,6 +19,12 @@ type ChapterTB struct {
 	Sort int
 	Pre string
 	Next string
+}
+
+func InitChapter()(*DBChapter){
+	dbw := DBChapter{}
+	dbw.Db=Init()
+	return &dbw
 }
 
 
