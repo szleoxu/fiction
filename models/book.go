@@ -4,11 +4,12 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+	"strconv"
 )
 
 
 type DBBook struct {
-	Db       *sql.DB
+	DB       *sql.DB
 	Book BookTB
 }
 
@@ -23,13 +24,13 @@ type BookTB struct {
 
 func InitBook()(*DBBook){
 	dbw := DBBook{}
-	dbw.Db=Init()
+	dbw.DB=Init()
 	return &dbw
 }
 
 func (dbw *DBBook)IsExistBook(name string)(bool) {
 	dbw.QueryDataPre()
-	err := dbw.Db.QueryRow("select name From book where name='"+name+"'").Scan(&dbw.Book.Name)
+	err := dbw.DB.QueryRow("select name From book where name='"+name+"'").Scan(&dbw.Book.Name)
 	if err!=nil{
 		return false
 	}
@@ -46,7 +47,7 @@ func (dbw *DBBook) QueryDataPre() {
 
 func (dbw *DBBook) QueryData(name string)(bool) {
 	dbw.QueryDataPre()
-	rows, err := dbw.Db.Query("SELECT * From url where  name='{$name}'")
+	rows, err := dbw.DB.Query("SELECT * From url where  name='{$name}'")
 	defer rows.Close()
 	if err != nil {
 		fmt.Printf("query data error: %v\n", err)
@@ -62,9 +63,19 @@ func (dbw *DBBook) QueryData(name string)(bool) {
 	return true
 }
 
-func (dbw *DBBook) InsertData(tb BookTB) (int64) {
+func (dbw *DBBook) GetBook(id int64) bool{
+	err := dbw.DB.QueryRow("SELECT name,author,image,site_name,site_url From book where id="+strconv.FormatInt(id,10)).
+		Scan(&dbw.Book.Name,&dbw.Book.Author,&dbw.Book.Image,&dbw.Book.SiteName,&dbw.Book.SiteUrl)
+	if err!=nil{
+		fmt.Println(err)
+		return false
+	}
+	return true
+}
+
+func (dbw *DBBook) Insert(tb BookTB) (int64) {
 	tb.SiteName="顶点小说"
-	stmt, _ := dbw.Db.Prepare("INSERT INTO book (name, author,image,site_name,site_url,created_at) VALUES (?,?,?,?,?,?)")
+	stmt, _ := dbw.DB.Prepare("INSERT INTO book (name, author,image,site_name,site_url,created_at) VALUES (?,?,?,?,?,?)")
 	defer stmt.Close()
 	ret, err := stmt.Exec(tb.Name.String, tb.Author, tb.Image, tb.SiteName, tb.SiteUrl, time.Now().Unix())
 	if err != nil {
