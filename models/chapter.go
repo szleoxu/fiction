@@ -45,6 +45,19 @@ func (dbw *DBChapter)IsExistChapter(bookID int64,title string)(bool) {
 	}
 }
 
+func (dbw *DBChapter)GetLastSort(bookID int64)(bool) {
+	dbw.QueryDataPre()
+	err := dbw.DB.QueryRow("select sort from chapter where bid="+strconv.FormatInt(bookID,10)+" order by id desc limit 1").Scan(&dbw.Chapter.Sort)
+	if err!=nil{
+		return false
+	}
+	if dbw.Chapter.Title.Valid {
+		return true
+	} else {
+		return false
+	}
+}
+
 
 func (dbw *DBChapter) Insert(tb ChapterTB) (bool) {
 	stmt, _ := dbw.DB.Prepare("INSERT INTO chapter (bid, title,content,sort,pre,next,created_at) VALUES (?,?,?,?,?,?,?)")

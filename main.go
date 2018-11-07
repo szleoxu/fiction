@@ -5,8 +5,9 @@ import "fiction/spider"
 
 func main() {
 
-	spider.DDXS()
-	//spider.AfreshBook(2)
+	//spider.DDXS()
+	//spider.AfreshBook(3)
+	spider.GetLastChapter(4)
 }
 
 

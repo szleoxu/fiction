@@ -11,6 +11,14 @@ import (
 	"os"
 )
 
+const(
+	bookListSelector="#hotcontent > div.l > div"
+	chapterListSelector="#list > dl > dt:nth-child(10)"
+	chapterTitleSelector="#wrapper > div.content_read > div > div.bookname > h1"
+	chapterContentSelector="#content"
+	chapterPreSelector="#wrapper > div.content_read > div > div.bottem2 > a:nth-child(2)"
+	chapterNextSelector="#wrapper > div.content_read > div > div.bottem2 > a:nth-child(4)"
+)
 
 func DDXS(){
 	start := time.Now()
@@ -21,7 +29,7 @@ func DDXS(){
 	if dom!=nil{
 		dbBook:=models.InitBook()
 		dbChapter:=models.InitChapter()
-		dom.Find("#hotcontent > div.l > div").Each(func(i int, content *goquery.Selection) {
+		dom.Find(bookListSelector).Each(func(i int, content *goquery.Selection) {
 			name := common.GbkToUtf8(content.Find("dl > dt > a").Text())
 			fmt.Println("Find book:"+name)
 			isExist:=dbBook.IsExistBook(name)
@@ -42,23 +50,23 @@ func DDXS(){
 					//get chapter list
 					dom=common.UrlResponse(chapterListUrl)
 					var chapterNum=0
-					dom.Find("#list > dl > dt:nth-child(10)").NextAll().EachWithBreak(func(i int, content *goquery.Selection) bool{
+					dom.Find(chapterListSelector).NextAll().EachWithBreak(func(i int, content *goquery.Selection) bool{
 						//get chapter
 						chapterUrl,_:= content.Find("a").Attr("href")
 						chapterUrl=chapterListUrl+chapterUrl
 						dom=common.UrlResponse(chapterUrl)
 						if dom!=nil{
 							chapterNum++
-							title:=common.GbkToUtf8(dom.Find("#wrapper > div.content_read > div > div.bookname > h1").Text())
+							title:=common.GbkToUtf8(dom.Find(chapterTitleSelector).Text())
 							isExist=dbChapter.IsExistChapter(insertLastID,title)
 							if isExist{
 								fmt.Println("Exist chapter:"+title)
 							}else{
-								chapterContent:=dom.Find("#content").Text()
+								chapterContent:=dom.Find(chapterContentSelector).Text()
 								chapterContent=common.GbkToUtf8(chapterContent)
-								pre,_:=dom.Find("#wrapper > div.content_read > div > div.bottem2 > a:nth-child(2)").Attr("href")
+								pre,_:=dom.Find(chapterPreSelector).Attr("href")
 								pre=chapterListUrl+pre
-								next,_:=dom.Find("#wrapper > div.content_read > div > div.bottem2 > a:nth-child(4)").Attr("href")
+								next,_:=dom.Find(chapterNextSelector).Attr("href")
 								next=chapterListUrl+next
 								tbChapter:=models.ChapterTB{}
 								tbChapter.Bid=insertLastID
@@ -103,29 +111,29 @@ func AfreshBook(bookID int64){
 		//get chapter list
 		dom:=common.UrlResponse(dbBook.Book.SiteUrl)
 		var chapterNum=0
-		dom.Find("#list > dl > dt:nth-child(10)").NextAll().EachWithBreak(func(i int, content *goquery.Selection) bool{
+		dom.Find(chapterListSelector).NextAll().EachWithBreak(func(i int, content *goquery.Selection) bool{
 			//get chapter
 			chapterUrl,_:= content.Find("a").Attr("href")
 			chapterUrl=chapterListUrl+chapterUrl
 			dom=common.UrlResponse(chapterUrl)
 			if dom!=nil{
-				chapterNum++
-				title:=common.GbkToUtf8(dom.Find("#wrapper > div.content_read > div > div.bookname > h1").Text())
+				title:=common.GbkToUtf8(dom.Find(chapterTitleSelector).Text())
 				isExist:=dbChapter.IsExistChapter(bookID,title)
 				if isExist{
 					fmt.Println("Exist chapter:"+title)
 				}else{
-					chapterContent:=dom.Find("#content").Text()
+					chapterContent:=dom.Find(chapterContentSelector).Text()
 					chapterContent=common.GbkToUtf8(chapterContent)
-					pre,_:=dom.Find("#wrapper > div.content_read > div > div.bottem2 > a:nth-child(2)").Attr("href")
+					pre,_:=dom.Find(chapterPreSelector).Attr("href")
 					pre=chapterListUrl+pre
-					next,_:=dom.Find("#wrapper > div.content_read > div > div.bottem2 > a:nth-child(4)").Attr("href")
+					next,_:=dom.Find(chapterNextSelector).Attr("href")
 					next=chapterListUrl+next
 					tbChapter:=models.ChapterTB{}
 					tbChapter.Bid=bookID
 					var chapterTitle=sql.NullString{title,true}
 					tbChapter.Title=chapterTitle
 					tbChapter.Content=chapterContent
+					chapterNum++
 					tbChapter.Sort=chapterNum
 					tbChapter.Pre=pre
 					tbChapter.Next=next
@@ -148,6 +156,53 @@ func AfreshBook(bookID int64){
 	os.Exit(0)
 }
 
-func AfreshChapter(bookID int64,chapterID int64){
-
+func GetLastChapter(bookID int64){
+	dbBook:=models.InitBook()
+	dbChapter:=models.InitChapter()
+	dbBook.GetBook(bookID)
+	chapterListUrl:=dbBook.Book.SiteUrl
+	dbChapter.GetLastSort(bookID)
+	chapterNum:=dbChapter.Chapter.Sort
+	dom:=common.UrlResponse(chapterListUrl)
+	dom.Find(chapterListSelector).PrevAll().EachWithBreak(func(i int, content *goquery.Selection) bool{
+		//get chapter
+		chapterUrl,_:= content.Find("a").Attr("href")
+		if chapterUrl!=""{
+			chapterUrl=chapterListUrl+chapterUrl
+			dom=common.UrlResponse(chapterUrl)
+			if dom!=nil{
+				title:=common.GbkToUtf8(dom.Find(chapterTitleSelector).Text())
+				isExist:=dbChapter.IsExistChapter(bookID,title)
+				if isExist{
+					fmt.Println("Exist chapter:"+title)
+				}else{
+					chapterContent:=dom.Find(chapterContentSelector).Text()
+					chapterContent=common.GbkToUtf8(chapterContent)
+					pre,_:=dom.Find(chapterPreSelector).Attr("href")
+					pre=chapterListUrl+pre
+					next,_:=dom.Find(chapterNextSelector).Attr("href")
+					next=chapterListUrl+next
+					tbChapter:=models.ChapterTB{}
+					tbChapter.Bid=bookID
+					var chapterTitle=sql.NullString{title,true}
+					tbChapter.Title=chapterTitle
+					tbChapter.Content=chapterContent
+					chapterNum++
+					tbChapter.Sort=chapterNum
+					tbChapter.Pre=pre
+					tbChapter.Next=next
+					isInsert:=dbChapter.Insert(tbChapter)
+					if isInsert==true{
+						fmt.Println("Insert chapter success:"+title)
+					}else{
+						fmt.Println("Insert chapter fail")
+					}
+				}
+			}
+		}
+		return true
+	})
+	dbBook.DB.Close()
+	dbChapter.DB.Close()
+	fmt.Println("complete")
 }
